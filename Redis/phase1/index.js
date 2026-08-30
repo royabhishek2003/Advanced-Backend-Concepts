@@ -4,6 +4,8 @@ import connectDb from './lib/db.js';
 import User from "./model/user.model.js"
 import rateLimiter from "./middleware/rateLimiting.js"
 import redis  from "./lib/redis.js"
+import sendEmail from "./lib/sendEmail.js"
+import emailQueue from "./queue.js"
 
 dotenv.config();
 
@@ -41,7 +43,10 @@ app.get("/getwithredis",async( req, res)=>{
         })
     }
    
-})      
+})     
+
+
+// BULLMQ -> EK Radis based queue management library hai jo background jobs handle karta hai
 
 app.post("/create",async (req,res)=>{
 
@@ -49,6 +54,9 @@ app.post("/create",async (req,res)=>{
         const {name,email,password}= req.body;
         redis.del("user:all");
         const user= await User.create({name,email,password});
+        //  await sendEmail(); // wait for the task to complete 
+        await emailQueue.add("send-email",{email}); // email queue ke andar ek job add ho gya hai jo worker consume karega 
+ 
         return res.status(200).json(user);
     }catch(error){
         return res.status(500).json({
@@ -60,6 +68,7 @@ app.post("/create",async (req,res)=>{
     
 })
 
+// Rate liming using Redis 
 app.get("/get", rateLimiter , async (req,res)=>{
     try{
         const user= await User.find({});
@@ -120,9 +129,8 @@ app.post("/verify-otp", async(req, res)=>{
         })
     }
 })
+ 
 
-
-// Rate liming using Redis 
 
 
 
