@@ -2,17 +2,15 @@ import express from "express";
 import dotenv from "dotenv";
 import connectDb from './lib/db.js';
 import User from "./model/user.model.js"
-import Redis from "ioredis";
+import rateLimiter from "./middleware/rateLimiting.js"
+import redis  from "./lib/redis.js"
+
 dotenv.config();
 
 const port = process.env.PORT || 5000;
 
 const app = express();
 app.use(express.json());
-
-
-// create a intsance of redis 
-const redis = new Redis(process.env.REDIS_URL);
 
 app.get("/", (req, res) => {
   return res.status(200).json({
@@ -62,7 +60,7 @@ app.post("/create",async (req,res)=>{
     
 })
 
-app.get("/get",async (req,res)=>{
+app.get("/get", rateLimiter , async (req,res)=>{
     try{
         const user= await User.find({});
         return res.status(200).json(user);
@@ -117,11 +115,15 @@ app.post("/verify-otp", async(req, res)=>{
     }
     catch(error){
         console.log(error);
-        return status(500).json({
+        return res.status(500).json({
             "Error":`Error is ${error}`
         })
     }
 })
+
+
+// Rate liming using Redis 
+
 
 
 
