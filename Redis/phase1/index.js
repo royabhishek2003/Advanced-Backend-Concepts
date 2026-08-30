@@ -73,12 +73,60 @@ app.get("/get",async (req,res)=>{
         })
     }
 
+})
+
 // we have learn API Caching now we store the otp for some time like 1,2 minutes 
 
 
-   
-    
+// get the otp and store unique otp for a emailid 
+app.post("/get-otp",async(req,res)=>{
+    const {email}= req.body;  
+    const otp= Math.floor(100000 + Math.random()*900000 ).toString();
+    await redis.set(`otp:${email}`,otp,"EX", 50);
+
+    return res.status(200).json({
+        "otp":otp
+    })
 })
+
+// verify the otp
+app.post("/verify-otp", async(req, res)=>{
+    try{
+        const {email, otp}= req.body;
+        if(!otp){
+            return res.status(400).json({
+                "message":"Please send latest otp"
+            })
+        }
+        const cachedotp= await redis.get(`otp:${email}`);
+        if(!cachedotp ){
+            return res.status(400).json({
+                "message":"OTP Expired"
+            })
+        }
+        if(cachedotp == otp){
+            await redis.del(`otp:${email}`);
+            return res.status(201).json({
+                "Message":"Otp is verifid"
+            })
+        }
+        return res.status(401).json({
+            "message":"Incorrect  otp"
+        })
+
+    }
+    catch(error){
+        console.log(error);
+        return status(500).json({
+            "Error":`Error is ${error}`
+        })
+    }
+})
+
+
+
+
+
 app.listen(port, () => {
     connectDb();
   console.log(`server started ${port}`);
