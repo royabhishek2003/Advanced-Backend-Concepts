@@ -1,8 +1,49 @@
 services:
   nginx:
-    image: nginx 
+    image: nginx
     ports:
-      - 8000:80
-      # using Bind Mount whatevery we type in nginx.conf locally will mount to the same filein the container 
+      - "8000:80"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - server1
+      - server2
+      - server3
+
+  server1:
+    build: ./server
+    env_file:
+      - ./server/.env
+    environment:
+      - SERVER_NAME= "Pehla Container server"
+    ports:
+      - "5000:7000"
+    depends_on:
+      - redis
+  
+  server2:
+    build: ./server
+    env_file:
+      - ./server/.env
+    environment:
+      - SERVER_NAME= "Dusra Container server"
+    ports:
+      - "5001:7000"
+    depends_on:
+      - redis
+
+  server3:
+    build: ./server
+    env_file:
+      - ./server/.env
+    environment:
+      - SERVER_NAME= "teesra Container server"
+    ports:
+      - "5002:7000"
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
