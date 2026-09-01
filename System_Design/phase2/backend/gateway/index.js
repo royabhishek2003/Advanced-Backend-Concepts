@@ -11,13 +11,13 @@ app.use(express.json());
 
 app.get("/", (req, res) => {
   return res.status(200).json({
-    message: `hello from Backend{Gateway}`,
+    message: `hello from ${process.env.SERVER_NAME}`,
   });
 });
 
-app.use("/auth", proxy("http://localhost:8001"));
-app.use("/order", proxy("http://localhost:8002"));
-app.use("/product", proxy("http://localhost:8003"));
+app.use("/auth", proxy("http://authservice:8001"));
+app.use("/order", proxy("http://orderservice:8002"));
+app.use("/product", proxy("http://productservice:8003"));
 
 
 app.listen(port, () => {
