@@ -57,8 +57,23 @@ app.get("/data",async (req,res)=>{
 
 app.get("/paginateddata",async (req,res)=>{
     try{
-        
+        const {page=1,limit=3}= req.query;
 
+        const options= {
+            page:parseInt(page),
+            limit:parseInt(limit)
+        }
+        const result= await User.paginate({},options);
+        return res.status(200).json({
+           "result": result.docs,
+           "Total document": result.totalDocs,
+           "TotalPage":result.totalPages,
+           "CurrentPage":result.page,
+           "haspreviouspage":result.hasPrevPage,
+           "hasnextPage":result.hasNextPage,
+           "previousPage":result.prevPage,
+           "nextPage":result.nextPage
+        })
     }
     catch(error){
         console.logo(`Error while fetchiung data: ${error}`);

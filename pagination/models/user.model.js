@@ -8,7 +8,7 @@ const userSchema = new mongoose.Schema({
     password:"String"
 },{timestamp:true});
 
-mySchema.plugin(mongoosePaginate);  // second step
+userSchema.plugin(mongoosePaginate);  // second step
 
 const User= mongoose.model("User",userSchema);
 
