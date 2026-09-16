@@ -54,6 +54,7 @@ app.get("/data",async (req,res)=>{
     }
 })
 
+// pagination using mongoose-paginate-v2(inbuilt method )
 
 app.get("/paginateddata",async (req,res)=>{
     try{
@@ -79,6 +80,33 @@ app.get("/paginateddata",async (req,res)=>{
         console.logo(`Error while fetchiung data: ${error}`);
     }
 })
+
+// pagination without using inbuilt npm 
+// by ourself 
+app.get("/paginated-data", async(req, res)=>{
+    try{
+       
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 3;
+        const skip= (page-1)*limit;
+        const total= await User.countDocuments();
+        const result = await User.find().skip(skip).limit(limit);
+        return res.status(200).json({
+            "Totalrecords":total,
+            "Totalpages":Math.ceil(total/limit),
+            "page":page,
+            "limit":limit,
+            result
+        })
+    }
+    catch(error){
+        console.log(`error while fetching user records: ${error}`)
+        return res.status(500).json({
+            "Message":"Internal Server Error"
+        });
+    }
+})
+
 dbConn();
 app.listen(process.env.PORT,()=>{
     console.log('Server is Running');
