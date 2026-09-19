@@ -3,7 +3,7 @@ import dotenv from "dotenv"
 import {GoogleGenAI} from "@google/genai"
 import { ChatGroq } from "@langchain/groq"
 import { ToolNode } from "@langchain/langgraph/prebuilt";
-import { MessagesAnnotation, StateGraph,Annotation } from "@langchain/langgraph";
+import { MessagesAnnotation, StateGraph,Annotation ,MemorySaver} from "@langchain/langgraph";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai"
 import { TavilySearch } from "@langchain/tavily";
 
@@ -82,6 +82,9 @@ const tool = new TavilySearch({
 });
 
 
+// now we are adding memory to our convesation 
+
+const checkPointer= new MemorySaver();
 
 const tools=[tool]
 const toolNode= new ToolNode(tools);
@@ -111,7 +114,16 @@ const callLLM= async(state)=>{
         const response = await llm.invoke([
             {
                 role:"system",
-                content:"You are a ai assistant your name is jarvis . donot give anything which you don't know call relevent tools"
+                content:`You are Jarvis AI assistant
+
+Use conversation memory first.
+Only use tools when the answer requires
+external real-time information like:
+weather, news, web search, stock prices etc.
+
+Do NOT call tools for simple conversation,
+memory-based questions, greetings,
+or personal context`
             },
             ...state.messages
         ])
@@ -124,7 +136,6 @@ const callLLM= async(state)=>{
 }}
 
 const shouldContinue= async(state)=>{
-
     const lastMessage= state.messages[state.messages.length -1];
     if (lastMessage.tool_calls?.length > 0) {
         return "tools";
@@ -138,18 +149,22 @@ const graph = new StateGraph(MessagesAnnotation)
                 .addEdge("__start__","agent")
                 .addEdge("tools","agent")
                 .addConditionalEdges("agent",shouldContinue)
-                .compile()
+                .compile({checkpointer:checkPointer})
 
 
 
 app.post("/ai", async(req, res)=>{
     try{
         const {input}= req.body;
-        const response = await graph.invoke({messages:[
+        const response = await graph.invoke(
+            {messages:[
             {role:"human",
             content:input
             }
-        ]})
+        ]},
+        {
+            configurable: {thread_id:"user123"} // hard coded thread_id 
+        } )
         console.log(response);
         const aimessageidx= response.messages.length -1;
         return res.status(200).json({
