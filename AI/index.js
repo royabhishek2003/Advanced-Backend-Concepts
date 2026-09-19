@@ -64,11 +64,12 @@ app.use(express.json());
 // })
 
 
-app.get("/",(req,res)=>{
-    return res.status(200).json({
-        "message":"Hello from level1"
-    })
-})
+// app.get("/",(req,res)=>{
+//     return res.status(200).json({
+//         "message":"Hello from level1"
+//     })
+// })
+
 
 
 // with langchain 
@@ -81,29 +82,17 @@ const tool = new TavilySearch({
 });
 
 
+
 const tools=[tool]
 const toolNode= new ToolNode(tools);
 
 
 const llm = new ChatGroq({
     model: "openai/gpt-oss-120b",
-    temrature:0,  // jitna kam temprature rakhenge llm utna serius rhega aur temrature jyada rakhne pr model creative type answer dega 
+    temperature:0,  // jitna kam temprature rakhenge llm utna serius rhega aur temrature jyada rakhne pr model creative type answer dega 
     maxRetries: 2,  // 
-    maxTokens:100
+    maxTokens:1000
 }).bindTools(tools);
-
-
-const aksai = async(input) => {
-    const aiMsg = await llm.invoke([
-    [
-        "system",
-        "You are a Assistant your name is Jarvis. If you don't know anything call the relevant tools",
-    ],
-    ["human", input],
-])
-    return aiMsg;
-}
-
 
 
 // make a custom state for langgraph 
@@ -115,12 +104,18 @@ const aksai = async(input) => {
 
 
 
-
 const callLLM= async(state)=>{
     try{
         // console.log("state: ",state);
-        const input = state.messages[0].content;
-        const response = await aksai(input)
+        
+        const response = await llm.invoke([
+            {
+                role:"system",
+                content:"You are a ai assistant your name is jarvis . donot give anything which you don't know call relevent tools"
+            },
+            ...state.messages
+        ])
+
         return {
             messages:[response]
         }
@@ -131,11 +126,10 @@ const callLLM= async(state)=>{
 const shouldContinue= async(state)=>{
 
     const lastMessage= state.messages[state.messages.length -1];
-    if(lastMessage.tool_calls.length > 0){
+    if (lastMessage.tool_calls?.length > 0) {
         return "tools";
-    }else{
-        "__end__"
     }
+    return "__end__";
 }
 
 const graph = new StateGraph(MessagesAnnotation)
@@ -153,7 +147,7 @@ app.post("/ai", async(req, res)=>{
         const {input}= req.body;
         const response = await graph.invoke({messages:[
             {role:"human",
-                content:input
+            content:input
             }
         ]})
         console.log(response);
