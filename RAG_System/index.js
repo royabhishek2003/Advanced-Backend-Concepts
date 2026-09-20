@@ -5,7 +5,6 @@ import fs from "fs"
 import {PDFParse} from "pdf-parse"
 import{RecursiveCharacterTextSplitter} from "@langchain/textsplitters"
 
-
 dotenv.config();
 
 const app= express();
