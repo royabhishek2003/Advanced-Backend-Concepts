@@ -21,7 +21,7 @@ app.post("/create", async (req, res)=>{
                 "Message":"Missing Feild All Feild are mecceary"
             })
         }
-
+        
         const user= await User.create({
             name,
             email,
